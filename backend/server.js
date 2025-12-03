@@ -260,12 +260,16 @@ function generateContactFormEmail(data) {
 }
 
 // 404 handler for API routes
-app.use('/api/*', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.status(404).json({ 
-    success: false,
-    error: 'Endpoint not found'
-  });
+// This should only catch undefined API routes, placed at the end
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(404).json({ 
+      success: false,
+      error: 'Endpoint not found'
+    });
+  }
+  next();
 });
 
 // Start server
