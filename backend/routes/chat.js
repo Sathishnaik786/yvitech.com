@@ -36,6 +36,15 @@ router.post('/chat', async (req, res) => {
       });
     }
 
+    // Mock response for testing when MOCK_CHAT is enabled
+    if (process.env.MOCK_CHAT === 'true') {
+      return res.json({ 
+        success: true, 
+        response: "This is a mock response for testing purposes. In a production environment, this would be a response from our AI assistant.",
+        sessionId: sessionId || generateSessionId()
+      });
+    }
+
     // Query knowledge base for relevant information
     let knowledgeBaseInfo = '';
     try {
@@ -85,9 +94,18 @@ router.post('/chat', async (req, res) => {
     });
   } catch (error) {
     console.error('Gemini API error:', error);
+    
+    // Provide more specific error messages based on error type
+    let errorMessage = 'Failed to process chat message';
+    if (error.status === 403) {
+      errorMessage = 'AI service is temporarily unavailable. Please contact support.';
+    } else if (error.message && error.message.includes('API key')) {
+      errorMessage = 'AI service configuration error. Please contact support.';
+    }
+    
     res.status(500).json({ 
       success: false, 
-      error: 'Failed to process chat message',
+      error: errorMessage,
       details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
