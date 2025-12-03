@@ -1,0 +1,16 @@
+[build]
+  base = "frontend/"
+  publish = "dist/"
+  command = "npm run build"
+
+[[plugins]]
+  package = "@netlify/plugin-lighthouse"
+  enabled = false
+
+[functions]
+  node_version = "20"
+
+[dev]
+  command = "npm run dev"
+  port = 5173
+  targetPort = 5173
