@@ -12,10 +12,7 @@
     "deploy:backend": "node deploy-backend.js",
     "deploy:frontend": "node deploy-frontend.js",
     "deploy": "npm run build:frontend && npm run deploy:frontend",
-    "deploy:full": "node deploy-full.js",
-    "test:connection": "node test-frontend-backend.js",
-    "test:chat": "node test-chat-full.js",
-    "test:complete": "node test-complete-chat.js"
+    "deploy:full": "node deploy-full.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.1.3",

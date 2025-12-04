@@ -6,11 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "build": "npm install",
-    "test:supabase": "node test-supabase.js",
-    "test:email": "node test-email.js",
-    "test:contact": "node test-contact-email.js",
-    "test:smtp": "node test-smtp-connection.js"
+    "build": "npm install"
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.34",
