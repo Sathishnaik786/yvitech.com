@@ -56,7 +56,47 @@ ehthumbs.db
 Thumbs.db
 
 # Security
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+.env*
+
+# Security certificates and keys
 *.pem
 *.key
 *.crt
 *.cert
+*.jks
+*.keystore
+
+# SSH keys
+*.pub
+*.ppk
+*.p12
+id_rsa
+id_dsa
+ssh_host_*
+
+# Password files
+*.passwd
+*.pwd
+.pass*
+
+# Database credentials
+*.sql
+*.dump
+*.bak
+
+# Configuration files with secrets
+config/secrets.yml
+secrets.json
+credentials.json
+
+# Application specific secrets
+*.secret
+*.token
+*.access_token
+*.refresh_token
+auth.json
+secrets.txt
