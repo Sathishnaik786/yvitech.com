@@ -176,10 +176,25 @@ const transporter = nodemailer.createTransport({
 
 ## 🔒 Security
 
+### Critical: Never Commit Sensitive Files!
+
+**Never commit `.env` files to version control!** They contain sensitive credentials that can compromise your systems.
+
 - Environment variables are used for sensitive data
 - CORS is configured to allow frontend requests
 - Input validation is performed on all API endpoints
 - Error messages are sanitized to prevent information leakage
+
+### Environment Variables Security
+
+All sensitive information should be stored in environment variables:
+
+1. Copy `.env.example` to `.env`
+2. Update `.env` with actual values
+3. **Never commit `.env` to version control**
+4. Add `.env` to `.gitignore` (already done)
+
+The `.gitignore` file prevents `.env` files from being committed, but always double-check before pushing.
 
 ## 🚀 Deployment
 

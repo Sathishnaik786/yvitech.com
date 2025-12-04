@@ -232,6 +232,23 @@ For detailed instructions, see `GODADDY_DEPLOYMENT_GUIDE.md` in the project root
 - **GoDaddy**
 - **Any static hosting provider**
 
+## 🔒 Security
+
+### Critical: Never Commit Sensitive Files!
+
+**Never commit `.env` files to version control!** They contain sensitive credentials that can compromise your systems.
+
+### Environment Variables Security
+
+All sensitive information should be stored in environment variables:
+
+1. Copy `.env.example` to `.env`
+2. Update `.env` with actual values
+3. **Never commit `.env` to version control**
+4. Add `.env` to `.gitignore` (already done)
+
+The `.gitignore` file prevents `.env` files from being committed, but always double-check before pushing.
+
 ## 📚 Additional Documentation
 
 - Refer to the main project README for overall architecture

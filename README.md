@@ -226,6 +226,24 @@ Each component also has its own README:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 🔒 Security
+
+### Environment Variables
+
+**Never commit `.env` files to version control!**
+
+Environment files contain sensitive information such as:
+- API keys
+- Database credentials
+- Email passwords
+- Service tokens
+
+Always use `.env.example` files to document required variables without exposing actual values.
+
+### Git Hooks
+
+This repository includes a `.gitignore` file that prevents sensitive files from being committed. Always verify that sensitive files are not tracked before pushing changes.
+
 ## 📞 Support
 
 For support, contact:
