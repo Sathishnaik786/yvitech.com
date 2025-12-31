@@ -130,7 +130,24 @@ const ChatWidget = () => {
         })
       });
 
-      const data = await response.json();
+      // Check if the response is ok before parsing JSON
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Response is not JSON');
+      }
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('JSON parsing error:', jsonError);
+        throw new Error('Invalid JSON response from server');
+      }
 
       if (data.success) {
         // Set session ID if provided
@@ -201,10 +218,25 @@ const ChatWidget = () => {
     } catch (error) {
       console.error('Error sending message:', error);
       
-      // Add error message to chat with typing effect
-      const errorText = error.message && error.message.includes('429') 
-        ? "I'm receiving too many requests right now. Please try again in a moment."
-        : "Sorry, I encountered an error. Please try again.";
+      // Determine appropriate error message based on error type
+      let errorText;
+      if (error.message && error.message.includes('429')) {
+        errorText = "I'm receiving too many requests right now. Please try again in a moment.";
+      } else if (error.message && error.message.includes('JSON')) {
+        errorText = "I'm having trouble connecting to the service. Please refresh the page and try again.";
+      } else if (error.message && error.message.includes('HTTP')) {
+        const statusMatch = error.message.match(/status: (\d+)/);
+        const status = statusMatch ? parseInt(statusMatch[1]) : null;
+        if (status === 500) {
+          errorText = "The server is experiencing issues. Please try again later.";
+        } else if (status === 404) {
+          errorText = "The service is temporarily unavailable. Please try again later.";
+        } else {
+          errorText = `Connection error (status: ${status || 'unknown'}). Please try again.`;
+        }
+      } else {
+        errorText = "Sorry, I encountered an error. Please try again.";
+      }
       
       const errorMessage = {
         id: Date.now() + 1,

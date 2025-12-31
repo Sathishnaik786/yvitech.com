@@ -21,17 +21,38 @@ if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === 'your-anon-key') {
   console.error('❌ Supabase ANON KEY is not set correctly!')
 }
 
-// Create Supabase client
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+// Create Supabase client with error handling for invalid configuration
+let supabaseClient;
+if (SUPABASE_URL && SUPABASE_URL !== 'https://your-project.supabase.co' && 
+    SUPABASE_ANON_KEY && SUPABASE_ANON_KEY !== 'your-anon-key') {
+  supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  
+  // Test the Supabase connection
+  supabaseClient.auth.getSession().then(({ error }) => {
+    if (error) {
+      console.error('❌ Supabase connection error:', error);
+    } else {
+      console.log('✅ Supabase connection successful');
+    }
+  }).catch(err => {
+    console.error('❌ Supabase connection test failed:', err);
+  });
+} else {
+  console.warn('⚠️ Supabase is not properly configured. Client will not be functional.');
+  
+  // Create a mock client that returns errors for all operations
+  supabaseClient = {
+    from: () => ({
+      insert: () => Promise.reject(new Error('Supabase not configured')),
+      select: () => Promise.reject(new Error('Supabase not configured')),
+    }),
+    auth: {
+      getSession: () => Promise.resolve({ error: null })
+    }
+  };
+}
 
-// Test the Supabase connection
-supabase.auth.getSession().then(({ error }) => {
-  if (error) {
-    console.error('❌ Supabase connection error:', error)
-  } else {
-    console.log('✅ Supabase connection successful')
-  }
-})
+export const supabase = supabaseClient;
 
 // Contact form table name - using the new table
 export const CONTACT_TABLE = 'contact_messages_new'
