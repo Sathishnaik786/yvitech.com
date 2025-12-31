@@ -13,7 +13,8 @@
     "resolveJsonModule": true
   },
   "include": [
-    "scripts/**/*"
+    "scripts/**/*",
+    "scripts/global.d.ts"
   ],
   "exclude": [
     "node_modules",

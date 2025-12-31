@@ -25,6 +25,7 @@
     "csv-parse": "^6.1.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "groq-sdk": "^0.37.0",
     "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.16",
     "pdf-parse": "^2.4.5",

@@ -5,10 +5,10 @@
  * and save them to the Supabase database.
  */
 
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import Groq from 'groq-sdk';
-import path from 'path';
+import * as path from 'path';
 import { fileURLToPath } from 'url';
 
 // Get __dirname equivalent for ES modules
@@ -61,7 +61,8 @@ async function generateEmbedding(text: string, retries: number = 3): Promise<num
       model: 'text-embedding-ada-002',
       input: content,
     });
-    return response.data[0].embedding;
+    const embedding = response.data[0].embedding;
+    return Array.isArray(embedding) ? embedding : [];
   } catch (error: any) {
     if (retries > 0 && (error.message.includes('429') || error.message.includes('quota'))) {
       console.log(`⚠️  Rate limit hit, waiting 10 seconds before retry (${retries} retries left)...`);
