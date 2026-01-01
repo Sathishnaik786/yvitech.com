@@ -1,8 +1,20 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+  
+  # Block access to sensitive files
+  RewriteRule ^\.env$ - [R=404,L]
+  RewriteRule ^\.git/ - [R=404,L]
+  RewriteRule ^package\.json$ - [R=404,L]
+  RewriteRule ^package-lock\.json$ - [R=404,L]
+  
+  # Ensure index.html is served for non-file, non-directory requests
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /index.html [L]
+  
+  # Allow access to API routes
+  RewriteCond %{REQUEST_URI} ^/api/
+  RewriteRule ^(.*)$ $1 [L]
 </IfModule>
