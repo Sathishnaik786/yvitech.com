@@ -580,10 +580,11 @@ router.post('/chat', async (req, res) => {
       // Also try to find matches for the normalized query
       const { data: exactMatch, error: exactMatchError } = await supabase
         .from('chatbot_knowledge')
-        .select('title, description')  // Changed from 'question' to 'title' to match the populate-knowledge-base.js structure
+        .select('title, description, keywords')  // Include keywords in the selection
         .or(
           `title.ilike.%${message.trim()}%,title.ilike.%${normalizedQuery}%,description.ilike.%${message.trim()}%,description.ilike.%${normalizedQuery}%`  // Match original or normalized query against title and description
         )
+        .limit(1) // Only get one exact match
         .single();
       
       console.log('Exact match query result - data:', exactMatch, 'error:', exactMatchError);
@@ -597,141 +598,86 @@ router.post('/chat', async (req, res) => {
         // No source indicator needed
         aiResponse = aiResponse;
       } else {
-        // If no exact match, try semantic keyword matching
-        const { data: allKnowledge, error: knowledgeFetchError } = await supabase
-          .from('chatbot_knowledge')
-          .select('title, description');  // Changed from 'question' to 'title' to match the populate-knowledge-base.js structure
-
-        if (!knowledgeFetchError && allKnowledge && allKnowledge.length > 0) {
-          console.log('Found', allKnowledge.length, 'knowledge entries to match against');
-          // Calculate similarity scores for all entries
-          let bestMatch = null;
-          let bestScore = 0;
+        // If no exact match, try keyword-based matching with full-text search
+        // First, extract keywords from the query to match against knowledge base keywords
+        const queryWordsArray = normalizedQuery.split(' ').filter(w => w.length > 0);
+        
+        // Look for entries that have matching keywords
+        let bestMatch = null;
+        let bestScore = 0;
+        
+        // Use Supabase full-text search or keyword matching instead of client-side iteration
+        if (queryWordsArray.length > 0) {
+          // Build the ilike query for keywords
+          let keywordCondition = '';
+          queryWordsArray.forEach((word, index) => {
+            if (index > 0) keywordCondition += ',';
+            keywordCondition += `keywords.ilike.%${word}%`;
+          });
           
-          for (const item of allKnowledge) {
-            // Calculate multiple similarity metrics for both title and description
-            const itemTitleNormalized = normalizeQuery(item.title);
-            const itemDescriptionNormalized = normalizeQuery(item.description);
-            
-            // Simple word overlap score for title
-            const queryWordsArray = normalizedQuery.split(' ').filter(w => w.length > 0);
-            const titleWordsArray = itemTitleNormalized.split(' ').filter(w => w.length > 0);
-            const descriptionWordsArray = itemDescriptionNormalized.split(' ').filter(w => w.length > 0);
-            
-            const queryWords = new Set(queryWordsArray);
-            const titleWords = new Set(titleWordsArray);
-            const descriptionWords = new Set(descriptionWordsArray);
-            
-            // Calculate scores for title
-            let titleOverlap = 0;
-            for (const word of queryWords) {
-              if (titleWords.has(word)) titleOverlap++;
-            }
-            const titleOverlapScore = queryWords.size > 0 ? titleOverlap / Math.max(queryWords.size, titleWords.size) : 0;
-            
-            // Calculate scores for description
-            let descriptionOverlap = 0;
-            for (const word of queryWords) {
-              if (descriptionWords.has(word)) descriptionOverlap++;
-            }
-            const descriptionOverlapScore = queryWords.size > 0 ? descriptionOverlap / Math.max(queryWords.size, descriptionWords.size) : 0;
-            
-            // Check for substring matches in title
-            const queryInTitle = itemTitleNormalized.includes(normalizedQuery) ? 0.9 : 0;
-            const titleInQuery = normalizedQuery.includes(itemTitleNormalized) ? 0.9 : 0;
-            
-            // Check for substring matches in description
-            const queryInDescription = itemDescriptionNormalized.includes(normalizedQuery) ? 0.8 : 0;
-            const descriptionInQuery = normalizedQuery.includes(itemDescriptionNormalized) ? 0.8 : 0;
-            
-            // Check for word-level inclusion in title
-            const allQueryWordsInTitle = queryWordsArray.every(word => titleWords.has(word)) ? 0.8 : 0;
-            const allTitleWordsInQuery = titleWordsArray.every(word => queryWords.has(word)) ? 0.8 : 0;
-            
-            // Check for word-level inclusion in description
-            const allQueryWordsInDescription = queryWordsArray.every(word => descriptionWords.has(word)) ? 0.7 : 0;
-            const allDescriptionWordsInQuery = descriptionWordsArray.every(word => queryWords.has(word)) ? 0.7 : 0;
-            
-            // Partial word matching (for cases like 'migrat' matching 'migration') in title
-            let titlePartialMatchScore = 0;
-            for (const queryWord of queryWordsArray) {
-              for (const titleWord of titleWordsArray) {
-                if (queryWord.length > 3 && titleWord.includes(queryWord) || queryWord.includes(titleWord)) {
-                  titlePartialMatchScore = Math.max(titlePartialMatchScore, 0.5);
-                  break;
+          const { data: keywordMatches, error: keywordError } = await supabase
+            .from('chatbot_knowledge')
+            .select('title, description, keywords')
+            .or(keywordCondition)
+            .limit(10); // Limit to top 10 keyword matches
+          
+          if (!keywordError && keywordMatches && keywordMatches.length > 0) {
+            // Process only the limited set of keyword matches
+            for (const item of keywordMatches) {
+              if (item.keywords && Array.isArray(item.keywords)) {
+                const matchedKeywords = item.keywords.filter(keyword => 
+                  normalizedQuery.includes(keyword.toLowerCase()) || 
+                  keyword.toLowerCase().includes(normalizedQuery)
+                );
+                
+                if (matchedKeywords.length > 0) {
+                  // Calculate a simple score based on keyword matches
+                  const keywordScore = Math.min(0.3 * matchedKeywords.length, 0.9);
+                  
+                  if (keywordScore > bestScore) {
+                    bestScore = keywordScore;
+                    bestMatch = item;
+                    console.log('Keyword match found for', item.title, 'keywords:', matchedKeywords);
+                  }
                 }
               }
             }
-            
-            // Partial word matching (for cases like 'migrat' matching 'migration') in description
-            let descriptionPartialMatchScore = 0;
-            for (const queryWord of queryWordsArray) {
-              for (const descriptionWord of descriptionWordsArray) {
-                if (queryWord.length > 3 && descriptionWord.includes(queryWord) || queryWord.includes(descriptionWord)) {
-                  descriptionPartialMatchScore = Math.max(descriptionPartialMatchScore, 0.4);
-                  break;
-                }
-              }
-            }
-            
-            // Calculate a composite similarity score considering both title and description
-            // Weight title more heavily than description
-            let compositeScore = Math.max(
-              titleOverlapScore * 1.2,  // Slightly higher weight for title
-              descriptionOverlapScore,
-              queryInTitle * 1.2,       // Higher weight for title substring matches
-              titleInQuery * 1.2,
-              queryInDescription,
-              descriptionInQuery,
-              allQueryWordsInTitle * 1.2,    // Higher weight for title word inclusion
-              allTitleWordsInQuery * 1.2,
-              allQueryWordsInDescription,
-              allDescriptionWordsInQuery,
-              titlePartialMatchScore * 1.2,  // Higher weight for title partial matches
-              descriptionPartialMatchScore,
-              // Additional check for partial matches in title
-              normalizedQuery.includes(itemTitleNormalized.substring(0, Math.min(10, itemTitleNormalized.length))) ? 0.7 : 0,
-              itemTitleNormalized.includes(normalizedQuery.substring(0, Math.min(10, normalizedQuery.length))) ? 0.7 : 0,
-              // Additional check for partial matches in description
-              normalizedQuery.includes(itemDescriptionNormalized.substring(0, Math.min(10, itemDescriptionNormalized.length))) ? 0.6 : 0,
-              itemDescriptionNormalized.includes(normalizedQuery.substring(0, Math.min(10, normalizedQuery.length))) ? 0.6 : 0
-            );
-            
-            // Check if query matches any keywords in the knowledge entry
-            if (item.keywords && Array.isArray(item.keywords)) {
-              const keywordMatches = item.keywords.filter(keyword => 
-                normalizedQuery.includes(keyword.toLowerCase()) || 
-                keyword.toLowerCase().includes(normalizedQuery)
-              );
+          }
+          
+          // If no keyword matches found, try title/description search with ilike
+          if (!bestMatch) {
+            const searchTerms = queryWordsArray.slice(0, 3); // Use only first 3 terms to avoid complex queries
+            if (searchTerms.length > 0) {
+              let searchCondition = '';
+              searchTerms.forEach((term, index) => {
+                if (index > 0) searchCondition += ',';
+                searchCondition += `title.ilike.%${term}%,description.ilike.%${term}%`;
+              });
               
-              if (keywordMatches.length > 0) {
-                // Boost score significantly if keywords match
-                const keywordBoost = Math.min(0.3 * keywordMatches.length, 0.5); // Max 0.5 boost
-                compositeScore = Math.max(compositeScore, 0.8); // Minimum score of 0.8 if keywords match
-                console.log('Keyword match found for', item.title, 'keywords:', keywordMatches);
+              const { data: textMatches, error: textError } = await supabase
+                .from('chatbot_knowledge')
+                .select('title, description')
+                .or(searchCondition)
+                .limit(5);
+              
+              if (!textError && textMatches && textMatches.length > 0) {
+                bestMatch = textMatches[0]; // Take the first match
+                bestScore = 0.5; // Medium confidence
               }
             }
-            
-            console.log('Matching', item.title, 'with score:', compositeScore, 'details:', {titleOverlapScore, descriptionOverlapScore, queryInTitle, queryInDescription});
-            
-            if (compositeScore > bestScore && compositeScore >= 0.05) {  // Lowered threshold to 5% for more inclusive matching
-              bestScore = compositeScore;
-              bestMatch = item;
-              console.log('Found better match:', item.title, 'with score:', compositeScore);
-            }
           }
+        }
+        
+        if (bestMatch && bestScore >= 0.3) {  // Higher threshold for quality matches
+          aiResponse = bestMatch.description;
+          responseSource = "database";
+          matchScore = bestScore;
+          console.log('✅ DB match found with score:', bestScore, 'for question:', bestMatch.title);
           
-          if (bestMatch && bestScore >= 0.1) {  // Lowered threshold for more inclusive matching
-            aiResponse = bestMatch.description;
-            responseSource = "database";
-            matchScore = bestScore;
-            console.log('✅ Semantic DB match found with score:', bestScore, 'for question:', bestMatch.title);
-            
-            // No source indicator needed
-            aiResponse = aiResponse;
-          } else {
-            console.log('No DB match found, best score was:', bestScore);
-          }
+          // No source indicator needed
+          aiResponse = aiResponse;
+        } else {
+          console.log('No DB match found, best score was:', bestScore);
         }
       }
     } catch (matchingError) {
