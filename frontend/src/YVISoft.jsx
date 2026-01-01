@@ -61,7 +61,7 @@ const YVISoft = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
-        {/* <Route path="/team/:id" element={<TeamDetail />} /> */}
+        <Route path="/team/:id" element={<TeamDetail />} />
         <Route path="/contact" element={<Contact />} />
 
         <Route path="/oracle-hcm" element={<OracleHCM />} />

@@ -155,63 +155,17 @@ const ChatWidget = () => {
           setSessionId(data.sessionId);
         }
 
-        // Add bot response with typing effect and suggestions
-        const botMessage = {
+        // Add bot response immediately to avoid artificial delays
+        const botResponse = {
           id: Date.now() + 1,
-          text: '',
-          fullText: data.response,
+          text: data.response, // Show full response immediately
           isBot: true,
-          suggestions: data.suggestions || [], // Include suggestions with the message
+          suggestions: data.suggestions || [],
           timestamp: new Date()
         };
-
-        setMessages(prev => [...prev, botMessage]);
         
-        // Simulate typing effect - complete in approximately 3 seconds total
-        let i = 0;
-        const responseLength = data.response.length;
-        const intervalDelay = 10; // Fixed fast interval
-        const startTime = Date.now();
-        const maxDuration = 3000; // Maximum 3 seconds
-        
-        const intervalId = setInterval(() => {
-          // Check if we've exceeded max duration
-          if (Date.now() - startTime >= maxDuration) {
-            // Immediately complete the message
-            setMessages(prevMessages => {
-              const updatedMessages = [...prevMessages];
-              const lastMessage = updatedMessages[updatedMessages.length - 1];
-              if (lastMessage.isBot) {
-                updatedMessages[updatedMessages.length - 1] = {
-                  ...lastMessage,
-                  text: data.response // Complete the full response
-                };
-              }
-              return updatedMessages;
-            });
-            clearInterval(intervalId);
-            setIsLoading(false);
-            return;
-          }
-          
-          if (i < responseLength) {
-            setMessages(prevMessages => {
-              const updatedMessages = [...prevMessages];
-              const lastMessage = updatedMessages[updatedMessages.length - 1];
-              if (lastMessage.isBot) {
-                updatedMessages[updatedMessages.length - 1] = {
-                  ...lastMessage,
-                  text: data.response.slice(0, i + 1)
-                };
-              }
-              return updatedMessages;
-            });
-            i++;
-          } else {
-            clearInterval(intervalId);
-            setIsLoading(false);
-          }
-        }, intervalDelay);
+        setMessages(prev => [...prev, botResponse]);
+        setIsLoading(false);
       } else {
         throw new Error(data.error || 'Failed to get response');
       }
@@ -238,61 +192,15 @@ const ChatWidget = () => {
         errorText = "Sorry, I encountered an error. Please try again.";
       }
       
-      const errorMessage = {
+      const errorResponse = {
         id: Date.now() + 1,
-        text: '',
-        fullText: errorText,
+        text: errorText, // Show full error message immediately
         isBot: true,
         timestamp: new Date()
       };
       
-      setMessages(prev => [...prev, errorMessage]);
-      
-      // Apply typing effect to error message - complete in approximately 3 seconds total
-      let i = 0;
-      const errorTextLength = errorText.length;
-      const intervalDelay = 10; // Fixed fast interval
-      const startTime = Date.now();
-      const maxDuration = 3000; // Maximum 3 seconds
-      
-      const intervalId = setInterval(() => {
-        // Check if we've exceeded max duration
-        if (Date.now() - startTime >= maxDuration) {
-          // Immediately complete the message
-          setMessages(prevMessages => {
-            const updatedMessages = [...prevMessages];
-            const lastMessage = updatedMessages[updatedMessages.length - 1];
-            if (lastMessage.isBot) {
-              updatedMessages[updatedMessages.length - 1] = {
-                ...lastMessage,
-                text: errorText // Complete the full response
-              };
-            }
-            return updatedMessages;
-          });
-          clearInterval(intervalId);
-          setIsLoading(false);
-          return;
-        }
-        
-        if (i < errorTextLength) {
-          setMessages(prevMessages => {
-            const updatedMessages = [...prevMessages];
-            const lastMessage = updatedMessages[updatedMessages.length - 1];
-            if (lastMessage.isBot) {
-              updatedMessages[updatedMessages.length - 1] = {
-                ...lastMessage,
-                text: errorText.slice(0, i + 1)
-              };
-            }
-            return updatedMessages;
-          });
-          i++;
-        } else {
-          clearInterval(intervalId);
-          setIsLoading(false);
-        }
-      }, intervalDelay);
+      setMessages(prev => [...prev, errorResponse]);
+      setIsLoading(false);
     }
   };
 

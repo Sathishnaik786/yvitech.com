@@ -51,7 +51,7 @@ const About = () => {
                         content="YVI Tech is a results-driven information technology firm dedicated to providing distinctive, dependable, and innovative software solutions."
                         videoName="About.mp4" />
             <Video/>
-             {/* <section className="leaderr" style={{backgroundColor: '#3B3B3B'}}>
+             <section className="leaderr" style={{backgroundColor: '#3B3B3B'}}>
                 <div className="container aos-init aos-animate" data-aos="fade-up">
                     <div className="section-title">
                         <h2>Board & Executive Committee</h2>
@@ -64,7 +64,7 @@ const About = () => {
                       ))}
                     </div>
                 </div>
-            </section>     */}
+            </section>    
             <section id="values" className="values" style={{backgroundColor: '#3B3B3B'}}>
                 <div className="container aos-init aos-animate" data-aos="fade-up">
                     <div className="section-title">
